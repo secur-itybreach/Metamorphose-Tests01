@@ -1,0 +1,132 @@
+/* ==========================================================================
+   LA CHAMBRE DE GREGOR — style.css
+   ========================================================================== */
+
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Georgia, serif;
+  line-height: 1.5;
+}
+
+
+/* Chambre : grille à zones nommées
+   Pour la réorganiser depuis un test :
+   room.el.style.gridTemplateAreas = `"lit lit" "bureau chaise" ...` */
+.room {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: 40vh 35vh 30vh 45vh 35vh 45vh;
+  grid-template-areas:
+    "cadre   cadre   .       armoire armoire armoire"
+    "texte-1 texte-1 texte-1 armoire armoire armoire"
+    "bureau  bureau  chaise  texte-2 texte-2 .      "
+    "bureau  bureau  chaise  lit     lit     lit    "
+    "texte-3 texte-3 .       lit     lit     lit    "
+    "commode commode commode texte-4 texte-4 .      ";
+  gap: 24px;
+  padding: 32px;
+}
+
+#cadre   { grid-area: cadre;   background: #c30e0e; }
+#armoire { grid-area: armoire; background: #1f04b9; }
+#bureau  { grid-area: bureau;  background: #a802a2; }
+#chaise  { grid-area: chaise;  background: #517f00; }
+#lit     { grid-area: lit;     background: #00c0ba; }
+#commode { grid-area: commode; background: #d67002; }
+
+#texte-1 { grid-area: texte-1; }
+#texte-2 { grid-area: texte-2; }
+#texte-3 { grid-area: texte-3; }
+#texte-4 { grid-area: texte-4; }
+
+.texte {
+  align-self: center;
+}
+
+
+/* Bulle de souvenir : cachée, affichée avec .is-visible */
+.memory-bubble {
+  position: fixed;
+  display: none;
+  max-width: 280px;
+  padding: 8px 12px;
+  background: #000;
+  color: #fff;
+  pointer-events: none;
+}
+
+.memory-bubble.is-visible {
+  display: block;
+}
+
+
+/* Navigation entre les pages (en bas de la chambre) */
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  padding: 32px;
+  font-family: sans-serif;
+}
+
+.page-nav a {
+  color: inherit;
+}
+
+
+/* Menu des tests et nom du test en cours */
+.test-menu,
+.test-label {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  padding: 8px 12px;
+  background: #000;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 0.8rem;
+}
+
+/* Le nom du test en haut, pour ne pas cacher la navigation entre les pages */
+.test-label {
+  top: 16px;
+  bottom: auto;
+}
+
+.test-menu ul {
+  list-style: none;
+}
+
+.test-menu a {
+  color: inherit;
+}
+
+.is-hidden {
+  display: none;
+}
+
+
+/* Mobile */
+@media (max-width: 700px) {
+  .room {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: none;
+    grid-auto-rows: minmax(30vh, auto);
+    grid-template-areas:
+      "cadre   armoire"
+      "texte-1 texte-1"
+      "bureau  chaise "
+      "texte-2 texte-2"
+      "lit     lit    "
+      "texte-3 texte-3"
+      "commode commode"
+      "texte-4 texte-4";
+    gap: 16px;
+    padding: 16px;
+  }
+}

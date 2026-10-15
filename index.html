@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>La chambre de Gregor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!--
+    LA CHAMBRE
+    La page entière est la chambre. La disposition est une grille CSS
+    à zones nommées (voir .room dans style.css).
+
+    Accroches JS :
+    - .meuble[data-memory]  → les meubles
+    - .texte                → les blocs de texte
+    Chaque élément est placé dans la grille via son id.
+  -->
+  <main class="room" id="room">
+
+    <!-- ===== MEUBLES ===== -->
+
+    <div class="meuble" id="cadre"
+         data-memory="souvenir">
+      <!-- SVG du cadre ici -->
+      <div class="meuble-svg" id="cadre-svg"></div>
+    </div>
+
+    <div class="meuble" id="armoire"
+         data-memory="souvenir">
+      <!-- SVG de l'armoire ici -->
+      <div class="meuble-svg" id="armoire-svg"></div>
+    </div>
+
+    <div class="meuble" id="bureau"
+         data-memory="souvenir">
+      <!-- SVG du bureau ici -->
+      <div class="meuble-svg" id="bureau-svg"></div>
+    </div>
+
+    <div class="meuble" id="chaise"
+         data-memory="souvenir">
+      <!-- SVG de la chaise ici -->
+      <div class="meuble-svg" id="chaise-svg"></div>
+    </div>
+
+    <div class="meuble" id="lit"
+         data-memory="souvenir">
+      <!-- SVG du lit ici -->
+      <div class="meuble-svg" id="lit-svg"></div>
+    </div>
+
+    <div class="meuble" id="commode"
+         data-memory="souvenir">
+      <!-- SVG de la commode ici -->
+      <div class="meuble-svg" id="commode-svg"></div>
+    </div>
+
+    <!-- ===== BLOCS DE TEXTE ===== -->
+
+    <p class="texte" id="texte-1">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante
+      venenatis dapibus. Cras mattis consectetur purus sit amet fermentum. Donec ullamcorper
+      nulla non metus auctor fringilla.
+    </p>
+
+    <p class="texte" id="texte-2">
+      Maecenas faucibus mollis interdum. Vestibulum id ligula porta felis euismod semper.
+      Nullam quis risus eget urna mollis ornare vel eu leo. Aenean lacinia bibendum nulla
+      sed consectetur.
+    </p>
+
+    <p class="texte" id="texte-3">
+      Curabitur blandit tempus porttitor. Etiam porta sem malesuada magna mollis euismod.
+      Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Sed posuere
+      consectetur est at lobortis.
+    </p>
+
+    <p class="texte" id="texte-4">
+      Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum
+      massa justo sit amet risus. Morbi leo risus, porta ac consectetur ac, vestibulum at eros.
+    </p>
+
+  </main>
+
+  <!-- Navigation entre les pages : remplie par _main.js -->
+  <nav class="page-nav is-hidden" id="page-nav" aria-label="Pages"></nav>
+
+  <!-- ===== COUCHE INTERFACE (au-dessus de la chambre) ===== -->
+
+  <!-- Bulle de souvenir : vide et cachée, les tests la remplissent et la positionnent -->
+  <div class="memory-bubble"></div>
+
+  <!-- Menu des tests : rempli par _main.js quand aucun ?test= n'est donné -->
+  <nav class="test-menu is-hidden" id="test-menu" aria-label="Tests d'interaction"></nav>
+
+  <!-- Étiquette du test en cours (lien retour vers le menu) -->
+  <a class="test-label is-hidden" id="test-label" href="./"></a>
+
+  <script type="module" src="scripts/_main.js"></script>
+</body>
+</html>
