@@ -18,6 +18,8 @@ const TESTS = [
   '08-meubles-solides',
   '09-solides-ecrasement-pages',
   '10-cafard-chute',
+  '11-fenetre',
+  '12-cafard-chute-scroll',
 ];
 
 // Nombre de pages : la navigation en bas de page va de 1 à PAGE_COUNT

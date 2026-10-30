@@ -1,0 +1,248 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>La chambre de Gregor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : scène 3D plein écran, fixe ; le scroll de la page pilote la caméra plan par plan. Un seul look « papier et encre ». */
+:root{
+  --paper:#f3f3f0;
+  --ink:#141414;
+  --ink-soft:#6b6b66;
+  --apple:#8c2b1e; /* la pomme fichée dans le dos */
+  --veil:rgba(243,243,240,.86);
+  --f-display:"IM Fell DW Pica", "Iowan Old Style", Georgia, serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-display)}
+#stage{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;touch-action:pan-y}
+#spacer{position:relative;z-index:-1}
+.ui{position:fixed;z-index:2;pointer-events:none}
+.ui *{pointer-events:auto}
+
+header.ui{top:calc(env(safe-area-inset-top,0px) + 18px);left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+h1{margin:0;font-weight:400;font-size:clamp(20px,2.4vw,30px);letter-spacing:.01em;background:var(--veil);padding:2px 8px}
+h1 i{color:var(--apple)}
+.hint{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);background:var(--veil);padding:4px 8px}
+
+nav.ui{right:max(16px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px}
+nav button{all:unset;cursor:pointer;font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);padding:5px 8px;background:var(--veil);text-align:right;font-variant-numeric:tabular-nums}
+nav button:hover{color:var(--ink)}
+nav button:focus-visible{outline:1px solid var(--ink);outline-offset:1px}
+nav button[aria-current="true"]{color:var(--paper);background:var(--ink)}
+
+.caption{left:max(16px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 22px);max-width:min(440px,calc(100% - 32px));background:var(--veil);padding:12px 14px;border-left:2px solid var(--ink)}
+.caption .k{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--apple);margin:0 0 6px}
+.caption p.t{margin:0;font-size:clamp(17px,1.6vw,21px);line-height:1.35;text-wrap:balance}
+.caption p.t em{font-style:italic}
+
+@media (max-width:700px){
+  nav.ui{top:auto;transform:none;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);left:max(16px,env(safe-area-inset-left,0px));flex-direction:row;overflow-x:auto;max-width:calc(100% - 32px);scrollbar-width:none}
+  nav button{flex:0 0 auto;text-align:center}
+  .caption{bottom:calc(env(safe-area-inset-bottom,0px) + 60px)}
+  .hint{display:none}
+}
+</style>
+
+<canvas id="stage" aria-label="Chambre de Gregor en 3D, dessinée au trait"></canvas>
+<div id="spacer" aria-hidden="true"></div>
+
+<header class="ui">
+  <h1>La chambre de <i>Gregor</i></h1>
+  <span class="hint">Scroll ou clic sur un meuble</span>
+</header>
+
+<nav class="ui" id="nav" aria-label="Plans de caméra"></nav>
+
+<div class="ui caption" aria-live="polite">
+  <p class="k" id="capK"></p>
+  <p class="t" id="capT"></p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const INK = 0x141414, APPLE = 0x8c2b1e, PAPER = 0xf3f3f0;
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- plans de caméra (pos = œil, look = point visé) ---------- */
+const SHOTS = [
+  {id:'boite',   k:'Ouverture',     t:'Une chambre humaine, un peu trop petite, entre quatre murs. Vue de dehors, c’est déjà une <em>boîte</em>.', pos:[0,1.7,9.5],  look:[0,1.3,0]},
+  {id:'chambre', k:'I · Le réveil',  t:'Gregor se réveille sur le dos. Tout est encore à sa place.',               pos:[0,1.6,2.35], look:[0,1.25,-2.5]},
+  {id:'lit',     k:'Le lit',         t:'Cent tentatives pour se tourner sur le côté droit. Le lit devient une gangue.', pos:[0.2,1.95,0.4], look:[0.2,0.35,-1.6]},
+  {id:'commode', k:'La commode',     t:'La pendule y tic-taque. Plus tard, on l’emporte avec la scie et les outils.', pos:[0.75,1.15,-0.8], look:[1.25,0.55,-2.25]},
+  {id:'porte',   k:'La porte',       t:'Fermée à clé de l’intérieur. Il l’ouvre avec ses mâchoires.',               pos:[-0.45,1.3,0.3], look:[-0.7,1.05,-2.5]},
+  {id:'fenetre', k:'La fenêtre',     t:'L’hôpital d’en face s’efface. Bientôt, ciel gris et terre grise se confondent.', pos:[-0.4,1.5,-0.4], look:[2,1.5,-0.4]},
+  {id:'bureau',  k:'Le bureau',      t:'Celui des devoirs d’école. On l’arrache du sol où il était presque enraciné.', pos:[-0.15,1.6,1.95], look:[-1.55,0.75,1.25]},
+  {id:'cadre',   k:'Le cadre',       t:'La dame en fourrure. Il s’y colle pour qu’on ne la lui prenne pas.',         pos:[-0.45,1.85,-0.9], look:[-2,1.9,-0.9]},
+  {id:'canape',  k:'Le canapé',      t:'Son refuge. Dessous, il se sent aussitôt à son aise.',                       pos:[0.05,1.45,0.35], look:[1.45,0.35,1.6]},
+  {id:'plafond', k:'II · Au plafond', t:'Suspendu, une légère oscillation. Le point de vue n’est plus humain.',       pos:[0,2.88,0.6],  look:[0,0,0.15]},
+];
+
+/* ---------- renderer / scène ---------- */
+const canvas = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setClearColor(PAPER,1);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55,1,0.02,100);
+
+const fillMat = new THREE.MeshBasicMaterial({color:PAPER, polygonOffset:true, polygonOffsetFactor:1, polygonOffsetUnits:1});
+const roomMat = fillMat.clone(); roomMat.side = THREE.BackSide;
+const lineMat = new THREE.LineBasicMaterial({color:INK});
+const hotMat  = new THREE.LineBasicMaterial({color:APPLE});
+
+const pickables = [];
+function box(group,w,h,d,x,y,z,mat){
+  const g = new THREE.BoxGeometry(w,h,d);
+  const m = new THREE.Mesh(g, mat||fillMat);
+  m.position.set(x,y,z);
+  const e = new THREE.LineSegments(new THREE.EdgesGeometry(g), lineMat);
+  m.add(e);
+  group.add(m);
+  if(group.userData.shot!==undefined) pickables.push(m);
+  return m;
+}
+function piece(shotId){
+  const g = new THREE.Group();
+  g.userData.shot = SHOTS.findIndex(s=>s.id===shotId);
+  scene.add(g); return g;
+}
+
+/* la pièce : 4 × 3 × 5 m, rendue de l'intérieur (BackSide) → maison de poupée vue de dehors */
+const room = new THREE.Group(); scene.add(room);
+box(room,4,3,5,0,1.5,0,roomMat);
+// panneau haut sur le mur gauche (armoire / porte latérale)
+box(room,0.03,2.05,0.85,-1.985,1.025,0.15);
+
+// lit
+const lit = piece('lit');
+box(lit,1.0,0.22,2.0,0.2,0.36,-1.5);
+box(lit,1.0,0.95,0.06,0.2,0.48,-2.47);
+[[-0.45,-0.6],[0.45,-0.6],[-0.45,-2.4],[0.45,-2.4]].forEach(([dx,z])=>box(lit,0.08,0.26,0.08,0.2+dx,0.13,z));
+
+// commode
+const com = piece('commode');
+box(com,0.75,0.82,0.45,1.25,0.41,-2.25);
+[0.17,0.41,0.65].forEach(y=>{ box(com,0.65,0.19,0.02,1.25,y,-2.02); box(com,0.04,0.04,0.03,1.25,y,-2.0); });
+box(com,0.16,0.16,0.08,1.1,0.9,-2.3); // pendule-réveil
+
+// porte (mur du fond)
+const porte = piece('porte');
+box(porte,0.8,2.0,0.04,-0.7,1.0,-2.48);
+box(porte,0.12,0.03,0.05,-0.42,1.0,-2.44);
+
+// fenêtre (mur droit)
+const fen = piece('fenetre');
+box(fen,0.04,1.5,1.4,1.98,1.55,-0.4);
+box(fen,0.05,1.5,0.04,1.97,1.55,-0.4);
+box(fen,0.05,0.04,1.4,1.97,1.55,-0.4);
+
+// bureau (mur gauche)
+const bur = piece('bureau');
+box(bur,0.75,0.05,1.45,-1.55,0.76,1.25);
+[[-1.88,0.58],[-1.22,0.58],[-1.88,1.92],[-1.22,1.92]].forEach(([x,z])=>box(bur,0.06,0.74,0.06,x,0.37,z));
+
+// cadre (dame en fourrure)
+const cad = piece('cadre');
+box(cad,0.04,0.62,0.5,-1.97,1.9,-0.9);
+box(cad,0.02,0.44,0.32,-1.95,1.9,-0.9);
+
+// canapé (avant droit)
+const can = piece('canape');
+box(can,1.0,0.42,1.55,1.45,0.21,1.62);
+box(can,0.18,0.9,1.55,1.9,0.45,1.62);
+box(can,1.0,0.6,0.14,1.45,0.3,0.86);
+box(can,0.85,0.08,1.35,1.4,0.46,1.65); // drap jeté
+
+/* ---------- nav + scroll ---------- */
+const nav = document.getElementById('nav');
+const spacer = document.getElementById('spacer');
+spacer.style.height = (SHOTS.length*100)+'vh';
+const btns = SHOTS.map((s,i)=>{
+  const b = document.createElement('button');
+  b.type='button'; b.id='shot-'+s.id;
+  b.textContent = String(i).padStart(2,'0')+' '+s.k.replace(/^.*· /,'');
+  b.addEventListener('click',()=>goTo(i));
+  nav.appendChild(b); return b;
+});
+function maxScroll(){ return Math.max(1, document.documentElement.scrollHeight - window.innerHeight); }
+function goTo(i){ window.scrollTo({top: i/(SHOTS.length-1)*maxScroll(), behavior: reduce?'auto':'smooth'}); }
+
+const capK = document.getElementById('capK'), capT = document.getElementById('capT');
+let current = -1;
+function setCaption(i){
+  if(i===current) return; current=i;
+  capK.textContent = SHOTS[i].k; capT.innerHTML = SHOTS[i].t;
+  btns.forEach((b,j)=>b.setAttribute('aria-current', j===i?'true':'false'));
+}
+
+/* ---------- caméra : position désirée depuis le scroll, lissée ---------- */
+const V = a=>new THREE.Vector3(a[0],a[1],a[2]);
+const desiredPos = new THREE.Vector3(), desiredLook = new THREE.Vector3();
+const curLook = V(SHOTS[0].look);
+camera.position.copy(V(SHOTS[0].pos));
+const ease = t=>t*t*(3-2*t);
+function computeDesired(){
+  const p = Math.min(1,Math.max(0,window.scrollY/maxScroll()))*(SHOTS.length-1);
+  const i = Math.min(SHOTS.length-2, Math.floor(p));
+  const t = ease(p-i);
+  desiredPos.copy(V(SHOTS[i].pos)).lerp(V(SHOTS[i+1].pos),t);
+  desiredLook.copy(V(SHOTS[i].look)).lerp(V(SHOTS[i+1].look),t);
+  setCaption(Math.round(p));
+}
+
+/* ---------- survol + clic sur les meubles ---------- */
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+let hovered = null, downAt = null;
+function groupAt(e){
+  const r = canvas.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse,camera);
+  const hit = ray.intersectObjects(pickables,false)[0];
+  return hit ? hit.object.parent : null;
+}
+function setHot(g){
+  if(g===hovered) return;
+  const paint=(grp,mat)=>grp && grp.traverse(o=>{ if(o.isLineSegments) o.material=mat; });
+  paint(hovered,lineMat); paint(g,hotMat); hovered=g;
+  canvas.style.cursor = g?'pointer':'default';
+}
+canvas.addEventListener('pointermove',e=>{ if(e.pointerType==='mouse') setHot(groupAt(e)); });
+canvas.addEventListener('pointerdown',e=>{ downAt=[e.clientX,e.clientY]; });
+canvas.addEventListener('pointerup',e=>{
+  if(!downAt) return;
+  const moved = Math.hypot(e.clientX-downAt[0], e.clientY-downAt[1]); downAt=null;
+  if(moved>6) return;
+  const g = groupAt(e);
+  if(g){ goTo(g.userData.shot===current?1:g.userData.shot); }
+});
+
+/* ---------- resize / boucle ---------- */
+function resize(){
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect = w/h;
+  camera.fov = w/h < 1 ? 78 : 55;  // portrait : plus large pour garder la pièce
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize',resize); resize();
+
+function loop(){
+  computeDesired();
+  const k = reduce ? 1 : 0.09;
+  camera.position.lerp(desiredPos,k);
+  curLook.lerp(desiredLook,k);
+  camera.lookAt(curLook);
+  renderer.render(scene,camera);
+  requestAnimationFrame(loop);
+}
+computeDesired();
+camera.position.copy(desiredPos); curLook.copy(desiredLook);
+loop();
+})();
+</script>
+
+</body></html>
